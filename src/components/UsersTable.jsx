@@ -1,13 +1,14 @@
-import React from "react";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
+import React, { useEffect, useState } from "react";
+import isEmpty from "lodash.isempty";
+import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from "@mui/material";
 
 const UsersTable = ({ tableHeaders, tableData }) => {
+    const [showTitle, setShowTitle] = useState(false);
+
+    useEffect(() => {
+        if (!isEmpty(tableHeaders) && !isEmpty(tableData)) setShowTitle(true);
+    }, [showTitle, tableHeaders, tableData]);
+
     const tableHeaderRender = (header, n) => {
         if (n === 0) {
             return (
@@ -40,18 +41,25 @@ const UsersTable = ({ tableHeaders, tableData }) => {
         }
     };
     return (
-        <TableContainer component={Paper} sx={{ marginBottom: "20px" }}>
-            <Table aria-label="simple table">
-                <TableHead>
-                    <TableRow>{tableHeaders.map((header, n) => tableHeaderRender(header, n))}</TableRow>
-                </TableHead>
-                <TableBody>
-                    {tableData.map((item, x) => (
-                        <TableRow key={x}>{tableData[x].split(",").map((data, i) => tableRowsRender(data, i))}</TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </TableContainer>
+        <Box>
+            {showTitle && (
+                <Typography variant="h2" align="center">
+                    Users table
+                </Typography>
+            )}
+            <TableContainer component={Paper} sx={{ margin: "30px 0px" }}>
+                <Table aria-label="simple table">
+                    <TableHead>
+                        <TableRow>{tableHeaders.map((header, n) => tableHeaderRender(header, n))}</TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {tableData.map((item, x) => (
+                            <TableRow key={x}>{tableData[x].split(",").map((data, i) => tableRowsRender(data, i))}</TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </Box>
     );
 };
 
