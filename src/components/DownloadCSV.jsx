@@ -14,13 +14,14 @@ const DownloadCSV = ({ setTableHeaders, setTableData }) => {
         if (file) {
             const reader = new FileReader();
 
-            reader.onload = (e) => {
-                const csvData = e.target.result;
-                parseCSV(csvData);
-            };
-
+            reader.onload = handleFileLoad;
             reader.readAsText(file);
         }
+    };
+
+    const handleFileLoad = (event) => {
+        const csvData = event.target.result;
+        parseCSV(csvData);
     };
 
     const parseCSV = (csvData) => {
