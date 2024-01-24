@@ -4,15 +4,17 @@ import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
 
 const UsersTable = ({ tableHeaders, tableData }) => {
     const [showTitle, setShowTitle] = useState(false);
-    const [incorrectAges, setIncorrectAges] = useState([]);
-    const [incorrectExp, setIncorrectExp] = useState([]);
-    const [incorrectIncome, setIncorrectIncome] = useState([]);
-    const [states, setStates] = useState([]);
+    const [validationResults, setValidationResults] = useState({
+        incorrectAges: [],
+        incorrectExp: [],
+        incorrectIncome: [],
+        states: [],
+    });
 
     useEffect(() => {
-        if (!isEmpty(tableHeaders) && !isEmpty(tableData)) setShowTitle(true);
+        const validateData = () => {
+            if (!isEmpty(tableHeaders) && !isEmpty(tableData)) setShowTitle(true);
 
-        const validatior = () => {
             const allAges = [];
             const agesCoords = [];
             const experienceCoords = [];
@@ -50,74 +52,54 @@ const UsersTable = ({ tableHeaders, tableData }) => {
                 }
             });
 
-            setIncorrectAges(agesCoords);
-            setIncorrectExp(experienceCoords);
-            setIncorrectIncome(incomeCoords);
-            setStates(states);
+            setValidationResults({
+                incorrectAges: agesCoords,
+                incorrectExp: experienceCoords,
+                incorrectIncome: incomeCoords,
+                states: states,
+            });
         };
-        validatior();
-    }, [showTitle, tableHeaders, tableData]);
 
-    const tableHeaderRender = (header, n) => {
-        if (n === 0) {
-            return (
-                <>
-                    <TableCell key={"id_" + n} size="small" sx={{ fontWeight: "700" }}>
-                        ID
-                    </TableCell>
-                    <TableCell key={"header_" + n} size="small" sx={{ fontWeight: "700" }}>
-                        {header}
-                    </TableCell>
-                </>
-            );
-        } else {
-            return (
-                <TableCell key={n} size="small" align="right" sx={{ fontWeight: "700" }}>
-                    {header}
-                </TableCell>
-            );
+        validateData();
+    }, [tableHeaders, tableData]);
+
+    const parseData = (data) => {
+        if (validationResults.states.includes(data)) {
+            return data.substring(0, 2).toUpperCase();
         }
+        return data;
     };
 
-    const tableRowsRender = (data, col, row) => {
-        if (row >= tableData.length - 1) return;
+    const renderTableHeader = (header, index) => {
+        const isIDColumn = index === 0;
 
-        const isAgeIncorrect = incorrectAges.find(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
-        const isExpIncorrect = incorrectExp.find(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
-        const isIncomeIncorrect = incorrectIncome.find(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
+        return (
+            <TableCell key={isIDColumn ? `id_${index}` : `header_${index}`} size="small" align={isIDColumn ? "left" : "right"} sx={{ fontWeight: "700" }}>
+                {isIDColumn ? "ID" : header}
+            </TableCell>
+        );
+    };
 
-        const parseData = () => {
-            if (states.includes(data)) {
-                return data.substring(0, 2).toUpperCase();
-            }
+    const renderTableCell = (data, col, row) => {
+        if (row >= tableData.length - 1) return null;
 
-            return data;
-        };
+        const { incorrectAges, incorrectExp, incorrectIncome } = validationResults;
 
-        if (col === 0) {
-            return (
-                <>
-                    <TableCell key={"id_" + col} component="th" scope="row">
-                        {row + 1}
-                    </TableCell>
-                    <TableCell key={"data" + col} component="th" scope="row">
-                        {parseData()}
-                    </TableCell>
-                </>
-            );
-        } else if (isAgeIncorrect || isExpIncorrect || isIncomeIncorrect) {
-            return (
-                <TableCell sx={{ backgroundColor: "red" }} key={col} align="right">
-                    {parseData()}
-                </TableCell>
-            );
-        } else {
-            return (
-                <TableCell sx={{ backgroundColor: "green" }} key={col} align="right">
-                    {parseData()}
-                </TableCell>
-            );
-        }
+        const isAgeIncorrect = incorrectAges.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
+        const isExpIncorrect = incorrectExp.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
+        const isIncomeIncorrect = incorrectIncome.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
+
+        return (
+            <TableCell
+                key={col}
+                align="right"
+                sx={{
+                    backgroundColor: isAgeIncorrect || isExpIncorrect || isIncomeIncorrect ? "red" : "green",
+                }}
+            >
+                {parseData(data)}
+            </TableCell>
+        );
     };
 
     return (
@@ -130,11 +112,11 @@ const UsersTable = ({ tableHeaders, tableData }) => {
             <TableContainer component={Paper} sx={{ margin: "30px 0px" }}>
                 <Table aria-label="simple table">
                     <TableHead>
-                        <TableRow>{tableHeaders.map((header, n) => tableHeaderRender(header.trim(), n))}</TableRow>
+                        <TableRow>{tableHeaders.map((header, index) => renderTableHeader(header.trim(), index))}</TableRow>
                     </TableHead>
                     <TableBody>
                         {tableData.map((item, row) => (
-                            <TableRow key={row}>{item.split(",").map((data, col) => tableRowsRender(data.trim(), col, row))}</TableRow>
+                            <TableRow key={row}>{item.split(",").map((data, col) => renderTableCell(data.trim(), col, row))}</TableRow>
                         ))}
                     </TableBody>
                 </Table>
