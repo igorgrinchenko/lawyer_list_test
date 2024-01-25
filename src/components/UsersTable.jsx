@@ -13,6 +13,9 @@ const UsersTable = ({ tableHeaders, tableData }) => {
         incorrectPhones: [],
         hasChildren: [],
         incorrectLicenseNumber: [],
+        mails: [],
+        phones: [],
+        duplicatesInfo: [],
     });
 
     const dateRegex = /^(?:(?:19|20)\d\d-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[1-9]|1[0-2])\/(?:0[1-9]|[12][0-9]|3[01])\/(?:19|20)\d\d)$/;
@@ -34,6 +37,9 @@ const UsersTable = ({ tableHeaders, tableData }) => {
             const phoneCoords = [];
             const childrenCoords = [];
             const licenseNumberCoords = [];
+            const mails = [];
+            const phones = [];
+            const duplicates = [];
 
             tableHeaders.forEach((element, idx) => {
                 if (element.toLowerCase().includes("age")) {
@@ -73,6 +79,8 @@ const UsersTable = ({ tableHeaders, tableData }) => {
                 } else if (element.toLowerCase().includes("phone")) {
                     tableData.forEach((phone, i) => {
                         const phoneValue = phone.split(",")[idx];
+                        phones.push(phoneValue);
+
                         const isPhoneNumberValid = (regex) => {
                             if (regex.test(phoneValue)) {
                                 return true;
@@ -97,14 +105,47 @@ const UsersTable = ({ tableHeaders, tableData }) => {
                         }
                     });
                 } else if (element.toLowerCase().includes("license number")) {
-                    tableData.forEach((date, i) => {
-                        const licenseNumberValue = date.split(",")[idx];
+                    tableData.forEach((number, i) => {
+                        const licenseNumberValue = number.split(",")[idx];
                         if (!licenseRegex.test(licenseNumberValue?.trim())) {
                             licenseNumberCoords.push([idx, i]);
                         }
                     });
+                } else if (element.toLowerCase().includes("mail")) {
+                    tableData.forEach((mail) => {
+                        const mailValue = mail.split(",")[idx];
+                        mails.push(mailValue);
+                    });
                 }
             });
+
+            const findDuplicateIndexes = () => {
+                const indexMap = {};
+
+                mails.forEach((value, index) => {
+                    if (!indexMap[value]) {
+                        indexMap[value] = [index + 1];
+                    } else {
+                        indexMap[value].push(index + 1);
+                    }
+                });
+                phones.forEach((value, index) => {
+                    if (!indexMap[value]) {
+                        indexMap[value] = [index + 1];
+                    } else {
+                        indexMap[value].push(index + 1);
+                    }
+                });
+
+                for (const value in indexMap) {
+                    const indexes = indexMap[value];
+                    if (indexes.length > 1 && value !== "undefined") {
+                        duplicates.push(`Дублікат ${value} має ID: ${indexes.join(", ")}`);
+                    }
+                }
+            };
+
+            findDuplicateIndexes();
 
             setValidationResults({
                 incorrectAges: agesCoords,
@@ -115,27 +156,41 @@ const UsersTable = ({ tableHeaders, tableData }) => {
                 incorrectPhones: phoneCoords,
                 hasChildren: childrenCoords,
                 incorrectLicenseNumber: licenseNumberCoords,
+                mails: mails,
+                duplicatesInfo: duplicates,
             });
         };
 
         validateData();
     }, [tableHeaders, tableData]);
 
-    const parseData = (data) => {
+    const parseData = (data, col) => {
         if (validationResults.states.includes(data)) {
             return data.substring(0, 2).toUpperCase();
         }
+
         return data;
     };
 
-    const renderTableHeader = (header, index) => {
-        const isIDColumn = index === 0;
-
-        return (
-            <TableCell key={isIDColumn ? `id_${index}` : `header_${index}`} size="small" align={isIDColumn ? "left" : "right"} sx={{ fontWeight: "700" }}>
-                {isIDColumn ? "ID" : header}
-            </TableCell>
-        );
+    const tableHeaderRender = (header, n) => {
+        if (n === 0) {
+            return (
+                <>
+                    <TableCell key={"id_" + n} size="small" sx={{ fontWeight: "700" }}>
+                        ID
+                    </TableCell>
+                    <TableCell key={"header_" + n} size="small" sx={{ fontWeight: "700" }}>
+                        {header}
+                    </TableCell>
+                </>
+            );
+        } else {
+            return (
+                <TableCell key={n} size="small" sx={{ fontWeight: "700" }}>
+                    {header}
+                </TableCell>
+            );
+        }
     };
 
     const renderTableCell = (data, col, row) => {
@@ -151,20 +206,26 @@ const UsersTable = ({ tableHeaders, tableData }) => {
         const isHasChildren = hasChildren.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
         const islicenseNumberIncorect = incorrectLicenseNumber.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
 
-        return (
-            <TableCell
-                key={col}
-                align="right"
-                sx={{
-                    backgroundColor:
-                        isAgeIncorrect || isExpIncorrect || isIncomeIncorrect || isDateIncorrect || isPhoneIncorrect || isHasChildren || islicenseNumberIncorect
-                            ? "red"
-                            : "green",
-                }}
-            >
-                {parseData(data)}
-            </TableCell>
-        );
+        if (col === 0) {
+            return (
+                <>
+                    <TableCell key={"id_" + col} component="th" scope="row">
+                        {row + 1}
+                    </TableCell>
+                    <TableCell key={"data" + col} component="th" scope="row">
+                        {parseData(data, col)}
+                    </TableCell>
+                </>
+            );
+        } else if (isAgeIncorrect || isExpIncorrect || isIncomeIncorrect || isDateIncorrect || isPhoneIncorrect || isHasChildren || islicenseNumberIncorect) {
+            return (
+                <TableCell sx={{ backgroundColor: "red" }} key={col}>
+                    {parseData(data, col)}
+                </TableCell>
+            );
+        } else {
+            return <TableCell key={col}>{parseData(data, col)}</TableCell>;
+        }
     };
 
     return (
@@ -177,7 +238,7 @@ const UsersTable = ({ tableHeaders, tableData }) => {
             <TableContainer component={Paper} sx={{ margin: "30px 0px" }}>
                 <Table aria-label="simple table">
                     <TableHead>
-                        <TableRow>{tableHeaders.map((header, index) => renderTableHeader(header.trim(), index))}</TableRow>
+                        <TableRow>{tableHeaders.map((header, index) => tableHeaderRender(header.trim(), index))}</TableRow>
                     </TableHead>
                     <TableBody>
                         {tableData.map((item, row) => (
@@ -186,6 +247,14 @@ const UsersTable = ({ tableHeaders, tableData }) => {
                     </TableBody>
                 </Table>
             </TableContainer>
+            <Typography sx={{ marginBottom: "30px" }} align="left">
+                {validationResults.duplicatesInfo.map((item) => (
+                    <>
+                        {item}
+                        <br></br>
+                    </>
+                ))}
+            </Typography>
         </Box>
     );
 };
