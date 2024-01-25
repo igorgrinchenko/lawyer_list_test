@@ -9,7 +9,10 @@ const UsersTable = ({ tableHeaders, tableData }) => {
         incorrectExp: [],
         incorrectIncome: [],
         states: [],
+        incorrectDates: [],
     });
+
+    const dateRegex = /^(?:(?:19|20)\d\d-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[1-9]|1[0-2])\/(?:0[1-9]|[12][0-9]|3[01])\/(?:19|20)\d\d)$/;
 
     useEffect(() => {
         const validateData = () => {
@@ -20,6 +23,7 @@ const UsersTable = ({ tableHeaders, tableData }) => {
             const experienceCoords = [];
             const incomeCoords = [];
             const states = [];
+            const dateCoords = [];
 
             tableHeaders.forEach((element, idx) => {
                 if (element.toLowerCase().includes("age")) {
@@ -49,6 +53,13 @@ const UsersTable = ({ tableHeaders, tableData }) => {
                         const stateValue = state.split(",")[idx];
                         states.push(stateValue);
                     });
+                } else if (element.toLowerCase().includes("date")) {
+                    tableData.forEach((date, i) => {
+                        const dateValue = date.split(",")[idx];
+                        if (!dateRegex.test(dateValue) || new Date(dateValue) < new Date()) {
+                            dateCoords.push([idx, i]);
+                        }
+                    });
                 }
             });
 
@@ -57,6 +68,7 @@ const UsersTable = ({ tableHeaders, tableData }) => {
                 incorrectExp: experienceCoords,
                 incorrectIncome: incomeCoords,
                 states: states,
+                incorrectDates: dateCoords,
             });
         };
 
@@ -83,18 +95,19 @@ const UsersTable = ({ tableHeaders, tableData }) => {
     const renderTableCell = (data, col, row) => {
         if (row >= tableData.length - 1) return null;
 
-        const { incorrectAges, incorrectExp, incorrectIncome } = validationResults;
+        const { incorrectAges, incorrectExp, incorrectIncome, incorrectDates } = validationResults;
 
         const isAgeIncorrect = incorrectAges.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
         const isExpIncorrect = incorrectExp.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
         const isIncomeIncorrect = incorrectIncome.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
+        const isDateIncorrect = incorrectDates.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
 
         return (
             <TableCell
                 key={col}
                 align="right"
                 sx={{
-                    backgroundColor: isAgeIncorrect || isExpIncorrect || isIncomeIncorrect ? "red" : "green",
+                    backgroundColor: isAgeIncorrect || isExpIncorrect || isIncomeIncorrect || isDateIncorrect ? "red" : "green",
                 }}
             >
                 {parseData(data)}
