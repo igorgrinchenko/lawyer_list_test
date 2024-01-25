@@ -10,9 +10,13 @@ const UsersTable = ({ tableHeaders, tableData }) => {
         incorrectIncome: [],
         states: [],
         incorrectDates: [],
+        incorrectPhones: [],
     });
 
     const dateRegex = /^(?:(?:19|20)\d\d-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[1-9]|1[0-2])\/(?:0[1-9]|[12][0-9]|3[01])\/(?:19|20)\d\d)$/;
+    const phoneRegex1 = /^\+\d{10,}$/;
+    const phoneRegex2 = /^\d{10,}$/;
+    const phoneRegex3 = /^\d{9,}$/;
 
     useEffect(() => {
         const validateData = () => {
@@ -24,6 +28,7 @@ const UsersTable = ({ tableHeaders, tableData }) => {
             const incomeCoords = [];
             const states = [];
             const dateCoords = [];
+            const phoneCoords = [];
 
             tableHeaders.forEach((element, idx) => {
                 if (element.toLowerCase().includes("age")) {
@@ -60,6 +65,25 @@ const UsersTable = ({ tableHeaders, tableData }) => {
                             dateCoords.push([idx, i]);
                         }
                     });
+                } else if (element.toLowerCase().includes("phone")) {
+                    tableData.forEach((phone, i) => {
+                        const phoneValue = phone.split(",")[idx];
+                        const isPhoneNumberValid = (regex) => {
+                            if (regex.test(phoneValue)) {
+                                return true;
+                            }
+                            return false;
+                        };
+
+                        if (isPhoneNumberValid(phoneRegex1)) return;
+                        phoneCoords.push([idx, i]);
+
+                        if (isPhoneNumberValid(phoneRegex2)) return;
+                        phoneCoords.push([idx, i]);
+
+                        if (isPhoneNumberValid(phoneRegex3)) return;
+                        phoneCoords.push([idx, i]);
+                    });
                 }
             });
 
@@ -69,6 +93,7 @@ const UsersTable = ({ tableHeaders, tableData }) => {
                 incorrectIncome: incomeCoords,
                 states: states,
                 incorrectDates: dateCoords,
+                incorrectPhones: phoneCoords,
             });
         };
 
@@ -95,19 +120,20 @@ const UsersTable = ({ tableHeaders, tableData }) => {
     const renderTableCell = (data, col, row) => {
         if (row >= tableData.length - 1) return null;
 
-        const { incorrectAges, incorrectExp, incorrectIncome, incorrectDates } = validationResults;
+        const { incorrectAges, incorrectExp, incorrectIncome, incorrectDates, incorrectPhones } = validationResults;
 
         const isAgeIncorrect = incorrectAges.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
         const isExpIncorrect = incorrectExp.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
         const isIncomeIncorrect = incorrectIncome.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
         const isDateIncorrect = incorrectDates.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
+        const isPhoneIncorrect = incorrectPhones.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
 
         return (
             <TableCell
                 key={col}
                 align="right"
                 sx={{
-                    backgroundColor: isAgeIncorrect || isExpIncorrect || isIncomeIncorrect || isDateIncorrect ? "red" : "green",
+                    backgroundColor: isAgeIncorrect || isExpIncorrect || isIncomeIncorrect || isDateIncorrect || isPhoneIncorrect ? "red" : "green",
                 }}
             >
                 {parseData(data)}
