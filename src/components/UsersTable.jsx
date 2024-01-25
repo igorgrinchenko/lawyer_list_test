@@ -11,6 +11,7 @@ const UsersTable = ({ tableHeaders, tableData }) => {
         states: [],
         incorrectDates: [],
         incorrectPhones: [],
+        hasChildren: [],
     });
 
     const dateRegex = /^(?:(?:19|20)\d\d-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[1-9]|1[0-2])\/(?:0[1-9]|[12][0-9]|3[01])\/(?:19|20)\d\d)$/;
@@ -29,6 +30,7 @@ const UsersTable = ({ tableHeaders, tableData }) => {
             const states = [];
             const dateCoords = [];
             const phoneCoords = [];
+            const childrenCoords = [];
 
             tableHeaders.forEach((element, idx) => {
                 if (element.toLowerCase().includes("age")) {
@@ -84,6 +86,13 @@ const UsersTable = ({ tableHeaders, tableData }) => {
                         if (isPhoneNumberValid(phoneRegex3)) return;
                         phoneCoords.push([idx, i]);
                     });
+                } else if (element.toLowerCase().includes("child")) {
+                    tableData.forEach((child, i) => {
+                        const childrenValue = child.split(",")[idx];
+                        if (!childrenValue?.includes("true") && !childrenValue?.includes("false")) {
+                            childrenCoords.push([idx, i]);
+                        }
+                    });
                 }
             });
 
@@ -94,6 +103,7 @@ const UsersTable = ({ tableHeaders, tableData }) => {
                 states: states,
                 incorrectDates: dateCoords,
                 incorrectPhones: phoneCoords,
+                hasChildren: childrenCoords,
             });
         };
 
@@ -120,20 +130,22 @@ const UsersTable = ({ tableHeaders, tableData }) => {
     const renderTableCell = (data, col, row) => {
         if (row >= tableData.length - 1) return null;
 
-        const { incorrectAges, incorrectExp, incorrectIncome, incorrectDates, incorrectPhones } = validationResults;
+        const { incorrectAges, incorrectExp, incorrectIncome, incorrectDates, incorrectPhones, hasChildren } = validationResults;
 
         const isAgeIncorrect = incorrectAges.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
         const isExpIncorrect = incorrectExp.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
         const isIncomeIncorrect = incorrectIncome.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
         const isDateIncorrect = incorrectDates.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
         const isPhoneIncorrect = incorrectPhones.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
+        const isHasChildren = hasChildren.some(([colIndex, rowIndex]) => colIndex === col && rowIndex === row);
 
         return (
             <TableCell
                 key={col}
                 align="right"
                 sx={{
-                    backgroundColor: isAgeIncorrect || isExpIncorrect || isIncomeIncorrect || isDateIncorrect || isPhoneIncorrect ? "red" : "green",
+                    backgroundColor:
+                        isAgeIncorrect || isExpIncorrect || isIncomeIncorrect || isDateIncorrect || isPhoneIncorrect || isHasChildren ? "red" : "green",
                 }}
             >
                 {parseData(data)}
